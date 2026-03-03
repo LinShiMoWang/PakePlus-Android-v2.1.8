@@ -1,0 +1,462 @@
+/* 签名面板样式 */
+.signature-panel {
+  position: fixed;
+  inset: 0;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.35);
+  z-index: 9999;
+  padding: 20px;
+}
+
+/* 初始隐藏/显示由类控制，避免与工具类（Tailwind .flex/.hidden）冲突 */
+.signature-panel.hidden {
+  display: none !important;
+}
+.signature-panel.flex {
+  display: flex !important;
+}
+
+.signature-content {
+  --sig-width: 66.666vw;
+  --sig-height: 66.666vh;
+  width: var(--sig-width);
+  height: var(--sig-height);
+  max-width: calc(100% - 40px);
+  max-height: calc(100% - 40px);
+  background: #fff;
+  border-radius: 12px;
+  padding: 18px;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.signature-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.signature-title {
+  font-weight: 700;
+  font-size: 18px;
+}
+
+.signature-sub {
+  color: #6b7280;
+  font-size: 13px;
+  margin-bottom: 8px;
+}
+
+.signature-body {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.signature-canvas {
+  width: 100%;
+  flex: 1 1 auto;
+  min-height: 120px;
+  border: 1px solid #e6e7ea;
+  border-radius: 8px;
+  background: #fff;
+  touch-action: none;
+  display: block;
+  box-sizing: border-box;
+}
+
+.signature-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 12px;
+  align-items: center;
+  justify-content: space-between;
+}
+
+@media (min-width: 480px) {
+  .signature-actions .signature-btn {
+    width: 48%;
+  }
+}
+
+@media (max-width: 479px) {
+  .signature-actions {
+    flex-direction: column;
+  }
+  .signature-actions .signature-btn {
+    width: 100%;
+  }
+}
+
+.signature-btn {
+  flex: 1;
+  padding: 10px 14px;
+  border-radius: 8px;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  cursor: pointer;
+}
+
+.signature-btn-outline {
+  background: #fff;
+  border: 1px solid #e6e7ea;
+  color: #111827;
+}
+
+.signature-btn-primary {
+  background: #165dff;
+  color: #fff;
+  border: none;
+}
+
+.signature-close {
+  background: transparent;
+  border: none;
+  color: #94a3b8;
+  cursor: pointer;
+  font-size: 18px;
+}
+
+/* 按钮样式变量 */
+:root {
+  --quality-btn-bg: #165cff;
+  --quality-btn-color: #ffffff;
+  --quality-btn-padding: 10px 14px;
+  --quality-btn-radius: 8px;
+  --quality-btn-border: none;
+  --quality-btn-hover: #1248d6;
+  --confirm-btn-bg: #4af0ff30;
+  --confirm-btn-color: #ffffff;
+  --confirm-btn-padding: 8px 12px;
+  --confirm-btn-radius: 8px;
+  --confirm-btn-border: none;
+  --confirm-btn-hover: #0ea26f;
+}
+
+/* 通用按钮样式 */
+.quality-action-btn,
+.confirm-action-btn {
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  cursor: pointer;
+}
+
+.quality-action-btn {
+  background: var(--quality-btn-bg);
+  color: var(--quality-btn-color);
+  padding: var(--quality-btn-padding);
+  border-radius: var(--quality-btn-radius);
+  border: var(--quality-btn-border);
+}
+
+.quality-action-btn.secondary {
+  background: transparent;
+  color: var(--quality-btn-bg);
+  border: 1px solid var(--quality-btn-bg);
+}
+
+.quality-action-btn:hover {
+  background: var(--quality-btn-hover);
+}
+
+.confirm-action-btn {
+  background: var(--confirm-btn-bg);
+  color: var(--confirm-btn-color);
+  padding: var(--confirm-btn-padding);
+  border-radius: var(--confirm-btn-radius);
+  border: var(--confirm-btn-border);
+}
+
+.confirm-action-btn:hover {
+  background: var(--confirm-btn-hover);
+}
+
+.quality-action-btn.small {
+  padding: 6px 10px;
+  font-size: 13px;
+}
+
+#save-quality-btn.quality-action-btn {
+  background: var(--quality-btn-bg) !important;
+  color: var(--quality-btn-color) !important;
+  padding: var(--quality-btn-padding) !important;
+  border-radius: var(--quality-btn-radius) !important;
+  border: var(--quality-btn-border) !important;
+}
+
+#save-quality-btn.quality-action-btn:hover {
+  background: var(--quality-btn-hover) !important;
+}
+
+/* 折叠后的简洁一行样式：
+   - 与下方列表列对齐（保持与表格单元格相同的左右内边距）
+   - 水平居中对齐文字垂直位置
+   - 在折叠行下方添加一条细线（下划线视觉）
+*/
+
+/* 确保折叠后的一行（collapsed row）与下方质量工单列表完全一致
+   - 精确匹配 Tailwind 的 `py-3 px-4 text-sm` 的计算样式
+   - 避免因继承或其他样式导致的视觉偏差
+*/
+#collapsed-detail-row-container table.min-w-full td {
+  padding: 0.75rem 1rem;
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  white-space: nowrap;
+  vertical-align: middle;
+}
+
+/* 折叠行下划线 */
+#collapsed-detail-row-container table.min-w-full tbody tr:first-child {
+  border-bottom: 1px solid #e6e7ea;
+}
+
+/* 窄屏内边距调整 */
+@media (max-width: 640px) {
+  #collapsed-detail-row-container table.min-w-full td {
+    padding: 0.5rem 0.75rem;
+  }
+}
+
+/* 工单详情卡片设置为相对定位，以便内部元素使用绝对定位 */
+#traceability-card {
+  position: relative;
+}
+
+/* 当卡片处于折叠状态时，缩短卡片顶部的内边距以减少上方空白 */
+#traceability-card.collapsed {
+  padding-top: 0.15rem;
+}
+
+/* 确保折叠的表格容器在隐藏时不占据空间 */
+#collapsed-detail-row-container.hidden {
+  display: none !important;
+}
+
+/* 小屏下：当 traceability 卡片处于折叠状态时，隐藏图片固定区域以避免占用视觉空间或遮挡内容 */
+@media (max-width: 768px) {
+  #traceability-card.collapsed #trace-fixed-photos {
+    display: none !important;
+    visibility: hidden !important;
+    pointer-events: none !important;
+  }
+}
+
+/* 全局模态提示样式（替代 alert） */
+#appModal .bg-primary {
+  background-color: var(--quality-btn-bg, #165cff);
+}
+
+/* 追溯图片区域 */
+#trace-fixed-photos {
+  position: absolute;
+  top: 80px;
+  right: 20px;
+  max-width: 350px;
+  display: flex;
+  flex-direction: column;
+  z-index: 100;
+}
+
+#batteriesContainer {
+  margin-top: 30px;
+}
+
+#trace-fixed-photos .trace-photo-grid {
+  display: flex;
+  flex-direction: row;
+  gap: 8px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  white-space: nowrap;
+  padding-bottom: 8px;
+  padding-right: 8px;
+}
+
+#trace-fixed-photos .trace-photo-item {
+  background: #fff;
+  border: 1px solid #e6e7ea;
+  border-radius: 8px;
+  overflow: hidden;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+  flex-shrink: 0;
+}
+
+#trace-fixed-photos .trace-photo-item img {
+  width: auto;
+  height: auto;
+  max-width: 100%;
+  max-height: 200px;
+  object-fit: contain;
+  display: block;
+}
+
+#trace-fixed-photos .trace-photo-caption {
+  font-size: 12px;
+  color: #6b7280;
+  text-align: center;
+  margin-top: 8px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+/* 移动端：调整签名面板尺寸以避免溢出屏幕并确保画布可交互 */
+@media (max-width: 640px) {
+  .signature-content {
+    /* 使用更小的 viewport 百分比，保证四边有间距 */
+    --sig-width: 94vw;
+    --sig-height: 72vh;
+    width: calc(100% - 40px);
+    height: auto;
+    max-height: calc(100% - 40px);
+    padding: 12px;
+    border-radius: 10px;
+  }
+
+  .signature-canvas {
+    /* 保证绘制区域在小屏上有足够高度，同时允许 content overflow 控制滚动 */
+    min-height: 200px;
+    max-height: calc(72vh - 120px);
+  }
+
+  .signature-actions {
+    gap: 8px;
+  }
+}
+
+/* 极窄屏幕（窄于 420px）进一步收紧高度以兼容纵向小屏设备 */
+@media (max-width: 420px) {
+  .signature-content {
+    --sig-height: 60vh;
+    padding: 10px;
+  }
+  .signature-canvas {
+    min-height: 160px;
+    max-height: calc(60vh - 110px);
+  }
+}
+
+/* 小屏适配：将固定定位的追溯图片区域改为文档流，避免遮挡明细 */
+@media (max-width: 768px) {
+  #trace-fixed-photos {
+    position: static !important;
+    top: auto !important;
+    right: auto !important;
+    max-width: 100% !important;
+    width: 100% !important;
+    display: block !important;
+    z-index: 1 !important;
+    margin-top: 12px;
+  }
+
+  #trace-fixed-photos .trace-photo-grid {
+    display: flex;
+    flex-direction: row;
+    gap: 8px;
+    overflow-x: auto;
+    padding: 6px 0;
+  }
+
+  #trace-fixed-photos .trace-photo-item {
+    min-width: 120px;
+    max-width: 40%;
+    height: 90px;
+    padding: 6px;
+  }
+
+  #trace-fixed-photos .trace-photo-item img {
+    max-height: 80px;
+    max-width: 100%;
+    object-fit: cover;
+  }
+
+  #trace-fixed-photos .trace-photo-caption {
+    white-space: normal;
+    font-size: 12px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  /* 工单公共信息在小屏上改为堆叠显示，避免表格列被压缩 */
+  #commonInfo {
+    display: block;
+    width: 100%;
+  }
+  #commonInfo tbody tr {
+    display: block;
+    border-bottom: 1px solid #eef2f6;
+    padding: 8px 0;
+  }
+  #commonInfo td {
+    display: block;
+    width: 100%;
+    padding: 6px 0;
+  }
+  #commonInfo td.font-medium {
+    color: #374151;
+  }
+
+  /* 电池明细表格在小屏时减小内边距以减少宽度占用，同时保持横向滚动 */
+  #batteriesContainer table th,
+  #batteriesContainer table td {
+    padding: 8px 6px;
+    font-size: 13px;
+  }
+}
+
+/* 极窄屏更紧凑 */
+@media (max-width: 420px) {
+  #trace-fixed-photos .trace-photo-item {
+    min-width: 100px;
+    height: 80px;
+  }
+  #batteriesContainer table th,
+  #batteriesContainer table td {
+    padding: 6px 4px;
+    font-size: 12px;
+  }
+}
+
+/* 移动端全屏侧栏覆盖与遮罩样式 */
+/* backdrop 位于侧栏下方，点击可关闭侧栏 */
+#mobile-nav-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  z-index: 40;
+  transition: opacity 200ms ease;
+}
+
+/* 当侧栏在移动端以覆盖方式打开时，给 aside 添加 .mobile-overlay-open 类 */
+.mobile-overlay-open {
+  position: fixed !important;
+  inset: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  max-width: 100% !important;
+  z-index: 50 !important;
+  overflow-y: auto !important;
+  background: #ffffff;
+  display: flex !important;
+  flex-direction: column !important;
+}
+
+/* 让侧栏内部内容（如 logo、nav）在覆盖模式下有合适内边距 */
+.mobile-overlay-open .p-4 {
+  padding-left: 20px !important;
+  padding-right: 20px !important;
+}

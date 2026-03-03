@@ -1,11 +1,1933 @@
-<!DOCTYPE html>
-<html lang="en">
-    <head>
-        <meta charset="UTF-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>PakePlus</title>
-    </head>
-    <body>
-        PakePlus
-    </body>
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>MES系统-电池包工单管理</title>
+    <!-- 本地化的静态资源：已把外部 CDN 替换为项目内 vendor/ 目录下的文件 -->
+    <script src="vendor/tailwind.cdn.js"></script>
+    <link rel="stylesheet" href="vendor/fontawesome.min.css" />
+    <!-- Chart.js 本地脚本 -->
+    <script src="vendor/chart.min.js" defer></script>
+
+    <!-- Tailwind 自定义配置 -->
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              primary: "#165DFF",
+              secondary: "#36CFC9",
+              warning: "#FF7D00",
+              danger: "#F53F3F",
+              success: "#00B42A",
+              dark: "#1D2129",
+              light: "#F2F3F5",
+            },
+            fontFamily: {
+              sans: ["Inter", "system-ui", "sans-serif"],
+            },
+          },
+        },
+      };
+    </script>
+    <style type="text/tailwindcss">
+      @layer utilities {
+        .content-auto {
+          content-visibility: auto;
+        }
+        .sidebar-item-active {
+          @apply bg-primary/10 text-primary border-l-4 border-primary;
+        }
+        .card-shadow {
+          @apply shadow-md hover:shadow-lg transition-shadow duration-300;
+        }
+
+        /* 保留基础 reset，但不要强制 body 使用视窗固定尺寸或隐藏滚动，
+           以便页面在小屏上可以正常滚动并响应高度变化。 */
+        * {
+          margin: 0;
+          padding: 0;
+          box-sizing: border-box;
+        }
+      }
+    </style>
+    <!-- 自定义样式：签名面板样式已抽离到 styles.css -->
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+
+  <body class="bg-gray-50 font-sans antialiased">
+    <div class="flex min-h-screen">
+      <!-- 侧边栏: 应包含系统导航、用户信息等（可折叠以适配移动端） -->
+      <aside
+        class="hidden lg:flex lg:flex-col lg:h-screen lg:sticky lg:top-0 lg:overflow-y-auto w-64 bg-white border-r border-gray-200"
+        id="main-sidebar"
+      >
+        <div class="p-4 border-b border-gray-200 flex items-center">
+          <i class="fa-solid fa-industry text-primary text-2xl mr-3"></i>
+          <h1 class="text-xl font-bold text-dark">MES制造执行系统</h1>
+        </div>
+
+        <!-- 导航菜单: 通过锚点切换不同功能区，UI 仅负责显示/切换 -->
+        <nav class="flex-1 overflow-y-auto p-4">
+          <ul class="space-y-1">
+            <li class="mb-4">
+              <p class="text-xs text-gray-500 uppercase font-semibold mb-2">
+                核心功能
+              </p>
+            </li>
+            <li>
+              <a
+                href="#dashboard"
+                class="sidebar-item-active flex items-center px-4 py-3 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors"
+              >
+                <i class="fa-solid fa-chart-line w-5 text-center mr-3"></i>
+                <span>生产仪表盘</span>
+              </a>
+            </li>
+            <li>
+              <a
+                href="#work-order"
+                class="flex items-center px-4 py-3 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors"
+              >
+                <i class="fa-solid fa-file-invoice w-5 text-center mr-3"></i>
+                <span>工单管理</span>
+              </a>
+            </li>
+            <li>
+              <a
+                href="#equipment"
+                class="flex items-center px-4 py-3 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors"
+              >
+                <i class="fa-solid fa-gears w-5 text-center mr-3"></i>
+                <span>设备管理</span>
+              </a>
+            </li>
+            <li>
+              <a
+                href="#quality"
+                class="flex items-center px-4 py-3 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors"
+              >
+                <i class="fa-solid fa-shield-halved w-5 text-center mr-3"></i>
+                <span>质量管理</span>
+              </a>
+            </li>
+            <li>
+              <a
+                href="#traceability"
+                class="flex items-center px-4 py-3 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors"
+              >
+                <i class="fa-solid fa-timeline w-5 text-center mr-3"></i>
+                <span>质量追溯</span>
+              </a>
+            </li>
+
+            <li class="mb-4 mt-6">
+              <p class="text-xs text-gray-500 uppercase font-semibold mb-2">
+                系统管理
+              </p>
+            </li>
+            <li>
+              <a
+                href="#user"
+                class="flex items-center px-4 py-3 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors"
+              >
+                <i class="fa-solid fa-users w-5 text-center mr-3"></i>
+                <span>用户管理</span>
+              </a>
+            </li>
+            <li>
+              <a
+                href="#settings"
+                class="flex items-center px-4 py-3 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors"
+              >
+                <i class="fa-solid fa-cog w-5 text-center mr-3"></i>
+                <span>系统设置</span>
+              </a>
+            </li>
+          </ul>
+        </nav>
+
+        <!-- 用户信息: 当前登录用户展示，含头像与邮箱（静态示例） -->
+        <div class="p-4 border-t border-gray-200">
+          <div class="flex items-center">
+            <img
+              src="OIP-C.jpg"
+              alt="用户头像"
+              width="40"
+              height="40"
+              loading="lazy"
+              decoding="async"
+              class="w-10 h-10 rounded-full mr-3"
+            />
+            <div>
+              <p class="text-sm font-medium text-gray-800">生产管理员</p>
+              <p class="text-xs text-gray-500">admin@mes-system.com</p>
+            </div>
+          </div>
+        </div>
+      </aside>
+
+      <!-- 主内容区域（右侧）：包含顶部导航、仪表盘与各功能模块 -->
+      <main class="flex-1 overflow-y-auto bg-gray-50">
+        <!-- 顶部导航栏 -->
+        <header class="bg-white border-b border-gray-200 sticky top-0 z-10">
+          <div class="flex items-center justify-between px-6 py-4">
+            <div class="flex items-center">
+              <button
+                id="sidebar-toggle"
+                class="text-gray-500 hover:text-gray-700 mr-4 lg:hidden"
+              >
+                <i class="fa-solid fa-bars text-xl"></i>
+              </button>
+              <h2 class="text-lg font-semibold text-gray-800" id="page-title">
+                生产仪表盘
+              </h2>
+            </div>
+            <div class="flex items-center space-x-4">
+              <div class="relative">
+                <input
+                  type="text"
+                  placeholder="搜索..."
+                  class="pl-10 pr-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary text-sm"
+                />
+                <i
+                  class="fa-solid fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
+                ></i>
+              </div>
+              <button class="relative text-gray-500 hover:text-gray-700">
+                <i class="fa-solid fa-bell text-xl"></i>
+                <span
+                  class="absolute -top-1 -right-1 bg-danger text-white text-xs rounded-full w-5 h-5 flex items-center justify-center"
+                  >23</span
+                >
+              </button>
+            </div>
+          </div>
+        </header>
+
+        <!-- 内容容器：每个 section 对应侧边栏的一个页面或模块 -->
+        <div class="px-6 py-6">
+          <!-- 仪表盘区域 -->
+          <section id="dashboard" class="space-y-6">
+            <!-- 关键指标卡片 -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              <!-- 今日产量 -->
+              <div class="bg-white rounded-xl p-6 card-shadow">
+                <div class="flex items-center justify-between mb-4">
+                  <h3 class="text-gray-500 font-medium">今日产量</h3>
+                  <i
+                    class="fa-solid fa-boxes-stacked text-primary text-xl opacity-50"
+                  ></i>
+                </div>
+                <div class="flex items-end justify-between">
+                  <div>
+                    <p class="text-3xl font-bold text-dark">12,890</p>
+                    <p class="text-sm text-success flex items-center mt-1">
+                      <i class="fa-solid fa-arrow-up mr-1"></i> 8.2% 较昨日
+                    </p>
+                  </div>
+                  <div class="w-20 h-20">
+                    <canvas id="productionChart"></canvas>
+                  </div>
+                </div>
+              </div>
+
+              <!-- 设备稼动率 -->
+              <div class="bg-white rounded-xl p-6 card-shadow">
+                <div class="flex items-center justify-between mb-4">
+                  <h3 class="text-gray-500 font-medium">设备稼动率</h3>
+                  <i
+                    class="fa-solid fa-gears text-secondary text-xl opacity-50"
+                  ></i>
+                </div>
+                <div class="flex items-end justify-between">
+                  <div>
+                    <p class="text-3xl font-bold text-dark">92.5%</p>
+                    <p class="text-sm text-danger flex items-center mt-1">
+                      <i class="fa-solid fa-arrow-down mr-1"></i> 1.3% 较昨日
+                    </p>
+                  </div>
+                  <div class="w-20 h-20">
+                    <canvas id="equipmentChart"></canvas>
+                  </div>
+                </div>
+              </div>
+
+              <!-- 良品率 -->
+              <div class="bg-white rounded-xl p-6 card-shadow">
+                <div class="flex items-center justify-between mb-4">
+                  <h3 class="text-gray-500 font-medium">产品良品率</h3>
+                  <i
+                    class="fa-solid fa-thumbs-up text-success text-xl opacity-50"
+                  ></i>
+                </div>
+                <div class="flex items-end justify-between">
+                  <div>
+                    <p class="text-3xl font-bold text-dark">98.7%</p>
+                    <p class="text-sm text-success flex items-center mt-1">
+                      <i class="fa-solid fa-arrow-up mr-1"></i> 0.5% 较昨日
+                    </p>
+                  </div>
+                  <div class="w-20 h-20">
+                    <canvas id="qualityChart"></canvas>
+                  </div>
+                </div>
+              </div>
+
+              <!-- 未完成工单 -->
+              <div class="bg-white rounded-xl p-6 card-shadow">
+                <div class="flex items-center justify-between mb-4">
+                  <h3 class="text-gray-500 font-medium">未完成工单</h3>
+                  <i
+                    class="fa-solid fa-clipboard-list text-warning text-xl opacity-50"
+                  ></i>
+                </div>
+                <div class="flex items-end justify-between">
+                  <div>
+                    <p class="text-3xl font-bold text-dark">28</p>
+                    <p class="text-sm text-warning flex items-center mt-1">
+                      <i class="fa-solid fa-arrow-up mr-1"></i> 4 较昨日
+                    </p>
+                  </div>
+                  <div class="w-20 h-20">
+                    <canvas id="workOrderChart"></canvas>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 生产趋势和工单列表 -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              <!-- 生产趋势图 -->
+              <div
+                class="bg-white rounded-xl p-6 lg:col-span-2 card-shadow flex flex-col"
+              >
+                <div class="flex items-center justify-between mb-6">
+                  <h3 class="text-lg font-semibold text-gray-800">
+                    生产趋势（近7天）
+                  </h3>
+                  <div class="flex space-x-2">
+                    <button
+                      class="px-3 py-1 text-sm bg-primary/10 text-primary rounded-lg hover:bg-primary/20 transition-colors"
+                    >
+                      日
+                    </button>
+                    <button
+                      class="px-3 py-1 text-sm bg-gray-100 text-gray-600 rounded-lg hover:bg-gray-200 transition-colors"
+                    >
+                      周
+                    </button>
+                    <button
+                      class="px-3 py-1 text-sm bg-gray-100 text-gray-600 rounded-lg hover:bg-gray-200 transition-colors"
+                    >
+                      月
+                    </button>
+                  </div>
+                </div>
+                <div class="flex-1 relative">
+                  <canvas id="trendChart" class="w-full h-full"></canvas>
+                </div>
+              </div>
+
+              <!-- 紧急工单列表 -->
+              <div class="bg-white rounded-xl p-6 card-shadow flex flex-col">
+                <div class="flex items-center justify-between mb-6">
+                  <h3 class="text-lg font-semibold text-gray-800">紧急工单</h3>
+                  <a href="#" class="text-primary text-sm hover:underline"
+                    >查看全部</a
+                  >
+                </div>
+                <div class="flex-1 space-y-4">
+                  <div
+                    class="border-l-4 border-danger p-3 bg-gray-50 rounded-r-lg"
+                  >
+                    <div class="flex justify-between items-center mb-1">
+                      <h4 class="font-medium text-gray-800">W2024052001</h4>
+                      <span
+                        class="text-xs bg-danger/10 text-danger px-2 py-1 rounded-full"
+                        >紧急</span
+                      >
+                    </div>
+                    <p class="text-sm text-gray-600 mb-2">
+                      电机外壳加工 - 装配线3
+                    </p>
+                    <div class="flex justify-between text-xs text-gray-500">
+                      <span>截止时间: 2026-07-22</span>
+                      <span>完成度: 65%</span>
+                    </div>
+                  </div>
+
+                  <div
+                    class="border-l-4 border-warning p-3 bg-gray-50 rounded-r-lg"
+                  >
+                    <div class="flex justify-between items-center mb-1">
+                      <h4 class="font-medium text-gray-800">W2024052002</h4>
+                      <span
+                        class="text-xs bg-warning/10 text-warning px-2 py-1 rounded-full"
+                        >加急</span
+                      >
+                    </div>
+                    <p class="text-sm text-gray-600 mb-2">
+                      控制面板组装 - 装配线1
+                    </p>
+                    <div class="flex justify-between text-xs text-gray-500">
+                      <span>截止时间: 2026-07-25</span>
+                      <span>完成度: 40%</span>
+                    </div>
+                  </div>
+
+                  <div
+                    class="border-l-4 border-warning p-3 bg-gray-50 rounded-r-lg"
+                  >
+                    <div class="flex justify-between items-center mb-1">
+                      <h4 class="font-medium text-gray-800">W2024052003</h4>
+                      <span
+                        class="text-xs bg-warning/10 text-warning px-2 py-1 rounded-full"
+                        >加急</span
+                      >
+                    </div>
+                    <p class="text-sm text-gray-600 mb-2">
+                      电源线焊接 - 焊接线2
+                    </p>
+                    <div class="flex justify-between text-xs text-gray-500">
+                      <span>截止时间: 2026-07-24</span>
+                      <span>完成度: 75%</span>
+                    </div>
+                  </div>
+
+                  <div
+                    class="border-l-4 border-primary p-3 bg-gray-50 rounded-r-lg"
+                  >
+                    <div class="flex justify-between items-center mb-1">
+                      <h4 class="font-medium text-gray-800">W2024052004</h4>
+                      <span
+                        class="text-xs bg-primary/10 text-primary px-2 py-1 rounded-full"
+                        >正常</span
+                      >
+                    </div>
+                    <p class="text-sm text-gray-600 mb-2">包装检测 - 包装线5</p>
+                    <div class="flex justify-between text-xs text-gray-500">
+                      <span>截止时间: 2026-07-28</span>
+                      <span>完成度: 20%</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 设备状态监控 -->
+            <div class="bg-white rounded-xl p-6 card-shadow">
+              <div class="flex items-center justify-between mb-6">
+                <h3 class="text-lg font-semibold text-gray-800">
+                  设备状态监控
+                </h3>
+                <a href="#" class="text-primary text-sm hover:underline"
+                  >查看全部设备</a
+                >
+              </div>
+              <div class="overflow-x-auto">
+                <table class="min-w-full">
+                  <thead>
+                    <tr class="border-b border-gray-200">
+                      <th
+                        class="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                      >
+                        设备编号
+                      </th>
+                      <th
+                        class="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                      >
+                        设备名称
+                      </th>
+                      <th
+                        class="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                      >
+                        所在产线
+                      </th>
+                      <th
+                        class="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                      >
+                        状态
+                      </th>
+                      <th
+                        class="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                      >
+                        稼动率
+                      </th>
+                      <th
+                        class="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                      >
+                        下次保养
+                      </th>
+                      <th
+                        class="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                      >
+                        操作
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody class="divide-y divide-gray-200">
+                    <tr>
+                      <td
+                        class="py-3 px-4 whitespace-nowrap text-sm text-gray-800"
+                      >
+                        EQ001
+                      </td>
+                      <td
+                        class="py-3 px-4 whitespace-nowrap text-sm text-gray-800"
+                      >
+                        CNC加工中心
+                      </td>
+                      <td
+                        class="py-3 px-4 whitespace-nowrap text-sm text-gray-800"
+                      >
+                        机加工线1
+                      </td>
+                      <td class="py-3 px-4 whitespace-nowrap">
+                        <span
+                          class="px-2 py-1 text-xs rounded-full bg-success/10 text-success"
+                          >运行中</span
+                        >
+                      </td>
+                      <td
+                        class="py-3 px-4 whitespace-nowrap text-sm text-gray-800"
+                      >
+                        95.2%
+                      </td>
+                      <td
+                        class="py-3 px-4 whitespace-nowrap text-sm text-gray-800"
+                      >
+                        2026-08-15
+                      </td>
+                      <td
+                        class="py-3 px-4 whitespace-nowrap text-sm text-primary"
+                      >
+                        <a href="#" class="hover:underline">详情</a>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td
+                        class="py-3 px-4 whitespace-nowrap text-sm text-gray-800"
+                      >
+                        EQ002
+                      </td>
+                      <td
+                        class="py-3 px-4 whitespace-nowrap text-sm text-gray-800"
+                      >
+                        焊接机器人
+                      </td>
+                      <td
+                        class="py-3 px-4 whitespace-nowrap text-sm text-gray-800"
+                      >
+                        焊接线2
+                      </td>
+                      <td class="py-3 px-4 whitespace-nowrap">
+                        <span
+                          class="px-2 py-1 text-xs rounded-full bg-warning/10 text-warning"
+                          >待机中</span
+                        >
+                      </td>
+                      <td
+                        class="py-3 px-4 whitespace-nowrap text-sm text-gray-800"
+                      >
+                        88.7%
+                      </td>
+                      <td
+                        class="py-3 px-4 whitespace-nowrap text-sm text-gray-800"
+                      >
+                        2026-08-20
+                      </td>
+                      <td
+                        class="py-3 px-4 whitespace-nowrap text-sm text-primary"
+                      >
+                        <a href="#" class="hover:underline">详情</a>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td
+                        class="py-3 px-4 whitespace-nowrap text-sm text-gray-800"
+                      >
+                        EQ003
+                      </td>
+                      <td
+                        class="py-3 px-4 whitespace-nowrap text-sm text-gray-800"
+                      >
+                        装配流水线
+                      </td>
+                      <td
+                        class="py-3 px-4 whitespace-nowrap text-sm text-gray-800"
+                      >
+                        装配线3
+                      </td>
+                      <td class="py-3 px-4 whitespace-nowrap">
+                        <span
+                          class="px-2 py-1 text-xs rounded-full bg-danger/10 text-danger"
+                          >故障中</span
+                        >
+                      </td>
+                      <td
+                        class="py-3 px-4 whitespace-nowrap text-sm text-gray-800"
+                      >
+                        65.3%
+                      </td>
+                      <td
+                        class="py-3 px-4 whitespace-nowrap text-sm text-gray-800"
+                      >
+                        2026-07-30
+                      </td>
+                      <td
+                        class="py-3 px-4 whitespace-nowrap text-sm text-primary"
+                      >
+                        <a href="#" class="hover:underline">详情</a>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td
+                        class="py-3 px-4 whitespace-nowrap text-sm text-gray-800"
+                      >
+                        EQ004
+                      </td>
+                      <td
+                        class="py-3 px-4 whitespace-nowrap text-sm text-gray-800"
+                      >
+                        包装机
+                      </td>
+                      <td
+                        class="py-3 px-4 whitespace-nowrap text-sm text-gray-800"
+                      >
+                        包装线5
+                      </td>
+                      <td class="py-3 px-4 whitespace-nowrap">
+                        <span
+                          class="px-2 py-1 text-xs rounded-full bg-success/10 text-success"
+                          >运行中</span
+                        >
+                      </td>
+                      <td
+                        class="py-3 px-4 whitespace-nowrap text-sm text-gray-800"
+                      >
+                        98.1%
+                      </td>
+                      <td
+                        class="py-3 px-4 whitespace-nowrap text-sm text-gray-800"
+                      >
+                        2026-09-05
+                      </td>
+                      <td
+                        class="py-3 px-4 whitespace-nowrap text-sm text-primary"
+                      >
+                        <a href="#" class="hover:underline">详情</a>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </section>
+
+          <!-- 全局模态提示（用于替换 alert，统一页面风格） -->
+          <div
+            id="appModal"
+            class="hidden fixed inset-0 z-[10000] flex items-center justify-center"
+          >
+            <div
+              class="absolute inset-0 bg-black/40"
+              id="appModalOverlay"
+            ></div>
+            <div
+              class="relative bg-white rounded-lg shadow-lg w-11/12 max-w-xl mx-auto p-6"
+            >
+              <div class="flex items-start justify-between mb-4">
+                <h3 id="appModalTitle" class="text-lg font-semibold">提示</h3>
+                <button
+                  id="appModalClose"
+                  class="text-gray-400 hover:text-gray-600"
+                >
+                  ✕
+                </button>
+              </div>
+              <div
+                id="appModalMessage"
+                class="text-sm text-gray-700 mb-4"
+              ></div>
+              <div class="text-right">
+                <button
+                  id="appModalOk"
+                  class="px-4 py-2 bg-primary text-white rounded"
+                >
+                  确定
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- 移动端侧栏遮罩（与侧栏配合用于全屏覆盖导航） -->
+          <div id="mobile-nav-backdrop" class="hidden lg:hidden"></div>
+
+          <!-- 工单管理模块 - 核心功能区：包含工单增删改查、详情与生产操作 -->
+          <section id="work-order" class="hidden space-y-6">
+            <!-- 工单管理头部 -->
+            <div class="bg-white rounded-xl p-6 card-shadow">
+              <div
+                class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6"
+              >
+                <h2 class="text-xl font-semibold text-gray-800">工单管理</h2>
+                <div class="flex flex-col sm:flex-row gap-3">
+                  <!-- 搜索框 -->
+                  <div class="relative">
+                    <input
+                      type="text"
+                      placeholder="搜索工单号/产品名称"
+                      class="pl-10 pr-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary text-sm w-full sm:w-64"
+                    />
+                    <i
+                      class="fa-solid fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
+                    ></i>
+                  </div>
+                  <!-- 状态筛选 -->
+                  <select
+                    id="status-filter"
+                    class="px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary/50 text-sm bg-white"
+                  >
+                    <option value="all">全部状态</option>
+                    <option value="pending">待派发</option>
+                    <option value="processing">生产中</option>
+                    <option value="paused">已暂停</option>
+                    <option value="completed">已完成</option>
+                    <option value="cancelled">已取消</option>
+                  </select>
+                  <!-- 创建工单按钮 -->
+                  <button
+                    type="button"
+                    id="create-work-order-btn"
+                    class="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors text-sm flex items-center"
+                  >
+                    <i class="fa-solid fa-plus mr-2"></i> 创建工单
+                  </button>
+                  <!-- 清空所有工单（额外功能） -->
+                  <button
+                    type="button"
+                    id="clear-all-work-orders"
+                    class="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors text-sm flex items-center"
+                  >
+                    <i class="fa-solid fa-trash mr-2"></i> 清空所有工单
+                  </button>
+                </div>
+              </div>
+
+              <!-- 工单列表：此表通过 JS 动态渲染（id="work-order-list"） -->
+              <div class="overflow-x-auto">
+                <table class="min-w-full">
+                  <thead>
+                    <tr class="border-b border-gray-200">
+                      <th
+                        class="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                      >
+                        工单号
+                      </th>
+                      <th
+                        class="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                      >
+                        产品名称
+                      </th>
+                      <th
+                        class="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                      >
+                        所属产线
+                      </th>
+                      <th
+                        class="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                      >
+                        计划产量
+                      </th>
+                      <th
+                        class="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                      >
+                        完成产量
+                      </th>
+                      <th
+                        class="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                      >
+                        状态
+                      </th>
+                      <th
+                        class="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                      >
+                        创建时间
+                      </th>
+                      <th
+                        class="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                      >
+                        截止时间
+                      </th>
+                      <th
+                        class="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                      >
+                        操作
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody class="divide-y divide-gray-200" id="work-order-list">
+                    <!-- 由JS动态渲染 -->
+                  </tbody>
+                </table>
+              </div>
+
+              <!-- 分页（演示）：只渲染第1页，真实场景请根据数据量实现翻页逻辑 -->
+              <div
+                class="flex items-center justify-between px-4 py-3 sm:px-6 mt-4"
+              >
+                <div
+                  class="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between"
+                >
+                  <div>
+                    <p class="text-sm text-gray-700" id="pagination-info">
+                      <!-- 由JS动态填充 -->
+                    </p>
+                  </div>
+                  <div>
+                    <nav
+                      class="isolate inline-flex -space-x-px rounded-md shadow-sm"
+                      aria-label="Pagination"
+                    >
+                      <a
+                        href="#"
+                        class="relative inline-flex items-center rounded-l-md px-2 py-2 text-gray-400 hover:bg-gray-50 focus:z-20 focus:outline-offset-0"
+                      >
+                        <span class="sr-only">上一页</span>
+                        <i class="fa-solid fa-chevron-left h-5 w-5"></i>
+                      </a>
+                      <a
+                        href="#"
+                        aria-current="page"
+                        class="relative z-10 inline-flex items-center bg-primary text-white px-4 py-2 text-sm font-semibold focus:z-20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+                        >1</a
+                      >
+                      <!-- 分页按钮仅展示第1页（演示用） -->
+                      <a
+                        href="#"
+                        class="relative inline-flex items-center rounded-r-md px-2 py-2 text-gray-400 hover:bg-gray-50 focus:z-20 focus:outline-offset-0"
+                      >
+                        <span class="sr-only">下一页</span>
+                        <i class="fa-solid fa-chevron-right h-5 w-5"></i>
+                      </a>
+                    </nav>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 工单详情弹窗：使用 `1.html` 的 UI 设计主样式，且保持与现有脚本的 id 绑定 -->
+            <div
+              id="work-order-detail-modal"
+              class="fixed inset-0 bg-black/50 z-50 hidden flex items-center justify-center"
+            >
+              <div
+                class="bg-white rounded-xl w-full max-w-4xl max-h-[90vh] overflow-y-auto"
+              >
+                <!-- 弹窗头部 -->
+                <div
+                  class="flex items-center justify-between p-6 border-b border-gray-200"
+                >
+                  <h3
+                    class="text-lg font-semibold text-gray-800"
+                    id="modal-title"
+                  >
+                    工单生产操作 - 电池包检测
+                  </h3>
+                  <button
+                    id="close-modal-btn"
+                    class="text-gray-500 hover:text-gray-700"
+                  >
+                    <i class="fa-solid fa-xmark text-xl"></i>
+                  </button>
+                </div>
+
+                <!-- 弹窗内容 -->
+                <div class="p-6 space-y-6">
+                  <!-- 工单基本信息 -->
+                  <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                      <h4 class="text-sm font-medium text-gray-500 mb-2">
+                        工单编号
+                      </h4>
+                      <p class="text-gray-800" id="detail-order-no">
+                        W2024052001
+                      </p>
+                    </div>
+                    <div>
+                      <h4 class="text-sm font-medium text-gray-500 mb-2">
+                        产品名称
+                      </h4>
+                      <p class="text-gray-800" id="detail-product-name">
+                        电机外壳加工
+                      </p>
+                    </div>
+                    <div>
+                      <h4 class="text-sm font-medium text-gray-500 mb-2">
+                        所属产线
+                      </h4>
+                      <p class="text-gray-800" id="detail-line">装配线3</p>
+                    </div>
+                    <div>
+                      <h4 class="text-sm font-medium text-gray-500 mb-2">
+                        优先级
+                      </h4>
+                      <p class="text-gray-800" id="detail-priority">
+                        <span
+                          class="px-2 py-1 text-xs rounded-full bg-danger/10 text-danger"
+                          >紧急</span
+                        >
+                      </p>
+                    </div>
+                    <div>
+                      <h4 class="text-sm font-medium text-gray-500 mb-2">
+                        状态
+                      </h4>
+                      <p class="text-gray-800" id="detail-status">
+                        <span
+                          class="px-2 py-1 text-xs rounded-full bg-warning/10 text-warning"
+                          >处理中</span
+                        >
+                      </p>
+                    </div>
+                    <div>
+                      <h4 class="text-sm font-medium text-gray-500 mb-2">
+                        截止时间
+                      </h4>
+                      <p class="text-gray-800" id="detail-deadline">
+                        2024-05-22 18:00
+                      </p>
+                    </div>
+                  </div>
+
+                  <!-- 电池检测数据录入（保持 index.html 的 id 和类） -->
+                  <div
+                    id="battery-input-area"
+                    class="border rounded-lg p-4 bg-gray-50"
+                  >
+                    <h4 class="text-sm font-medium text-gray-800 mb-4">
+                      电池检测数据录入
+                    </h4>
+
+                    <div
+                      id="batteryFormContainer"
+                      class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4"
+                    >
+                      <div>
+                        <label class="block text-xs text-gray-500 mb-1"
+                          >电池类型</label
+                        >
+                        <select
+                          class="battery-type w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+                        >
+                          <option value="三元锂电池">三元锂电池</option>
+                          <option value="磷酸铁锂电池">磷酸铁锂电池</option>
+                          <option value="锰酸锂电池">锰酸锂电池</option>
+                          <option value="钴酸锂电池">钴酸锂电池</option>
+                        </select>
+                        <!-- 新增：电池容量字段 -->
+                        <label class="block text-xs text-gray-500 mb-1 mt-2"
+                          >电池容量 (mAh)</label
+                        >
+                        <input
+                          type="number"
+                          step="1"
+                          class="battery-capacity w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+                          placeholder="例如：5000"
+                        />
+                      </div>
+                      <div>
+                        <div class="flex items-center justify-between">
+                          <label class="block text-xs text-gray-500 mb-1"
+                            >电池电压 (V)</label
+                          >
+                          <button
+                            type="button"
+                            id="addBatteryRow"
+                            class="text-primary hover:text-primary/80 text-sm"
+                          >
+                            <i class="fa-solid fa-plus-circle"></i> 添加电池
+                          </button>
+                        </div>
+                        <input
+                          type="number"
+                          step="0.001"
+                          class="battery-voltage w-full rounded-lg border border-gray-300 px-3 py-2 text-sm mb-2"
+                          placeholder="例如：3750 (mV) 或 3.75 (V)"
+                        />
+                        <label class="block text-xs text-gray-500 mb-1"
+                          >电池电阻 (Ω)</label
+                        >
+                        <input
+                          type="number"
+                          step="0.001"
+                          class="battery-resistance w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+                          placeholder="例如：0.025"
+                        />
+                      </div>
+                      <!-- 备注已移至弹窗底部固定区域（保留 textarea 类名以兼容现有脚本） -->
+                    </div>
+                    <!-- 提交按钮已移动到弹窗底部，保留此处为空 -->
+                  </div>
+
+                  <!-- 图片上传/拍照区域（已与检测历史记录互换位置） -->
+                  <div
+                    id="image-upload-area"
+                    class="border rounded-lg p-4 bg-gray-50"
+                  >
+                    <h4 class="text-sm font-medium text-gray-800 mb-4">
+                      现场图片上传
+                    </h4>
+                    <div id="photo-operation-area" class="flex gap-4 mb-4">
+                      <button
+                        id="capture-photo-btn"
+                        class="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors text-sm flex items-center"
+                        type="button"
+                      >
+                        <i class="fa-solid fa-camera mr-2"></i> 上传图片
+                      </button>
+                      <!-- 现场拍照已移除 -->
+                      <input
+                        type="file"
+                        id="photo-file-input"
+                        accept="image/*"
+                        multiple
+                        class="hidden"
+                      />
+                      <!-- 用于调用移动设备原生相机：capture="environment" 建议用于后置摄像头 -->
+                      <input
+                        type="file"
+                        id="photo-capture-input"
+                        accept="image/*"
+                        capture="environment"
+                        class="hidden"
+                      />
+                    </div>
+
+                    <!-- 图片预览区域 -->
+                    <div
+                      id="photo-preview-container"
+                      class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4"
+                    >
+                      <div class="text-sm text-gray-400 text-center py-4">
+                        暂无图片
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- 备注区（移到检测历史上方） -->
+                  <div
+                    id="detail-remark-area"
+                    class="bg-white border rounded-lg p-4 mb-4"
+                  >
+                    <label class="block text-xs text-gray-500 mb-1">备注</label>
+                    <textarea
+                      class="battery-remark w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+                      rows="2"
+                      placeholder="输入备注信息"
+                    ></textarea>
+                  </div>
+
+                  <!-- 电池检测历史记录（与图片上传区块位置互换） -->
+                  <div>
+                    <h4 class="text-sm font-medium text-gray-800 mb-4">
+                      检测历史记录
+                    </h4>
+                    <div id="batteryRecordList" class="space-y-3">
+                      <div class="text-sm text-gray-400 text-center py-2">
+                        暂无记录
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- 备注区已上移到检测历史上方，原底部固定备注区已删除 -->
+
+                <!-- 弹窗底部 -->
+                <div
+                  class="flex items-center justify-end p-6 border-t border-gray-200"
+                >
+                  <button
+                    id="close-detail-btn"
+                    class="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors text-sm mr-3"
+                  >
+                    关闭
+                  </button>
+                  <button
+                    id="submitBatteryData"
+                    class="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors text-sm"
+                  >
+                    提交检测数据
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- 摄像头弹窗（移动到 body 底部以避免 stacking context 问题） -->
+
+            <!-- 创建工单弹窗：表单验证较为基础，示例用于本地演示 -->
+            <div
+              id="create-work-order-modal"
+              class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 hidden"
+            >
+              <div
+                class="bg-white rounded-xl w-full max-w-2xl max-h-[90vh] overflow-auto"
+              >
+                <div
+                  class="p-6 border-b border-gray-200 flex justify-between items-center"
+                >
+                  <h3 class="text-lg font-semibold text-gray-800">
+                    创建新工单
+                  </h3>
+                  <button
+                    type="button"
+                    id="close-create-modal-btn"
+                    class="text-gray-500 hover:text-gray-700"
+                  >
+                    <i class="fa-solid fa-xmark text-xl"></i>
+                  </button>
+                </div>
+                <div class="p-6">
+                  <form id="create-work-order-form" class="space-y-4">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label
+                          class="block text-sm font-medium text-gray-700 mb-1"
+                          >产品名称 <span class="text-danger">*</span></label
+                        >
+                        <select
+                          name="productName"
+                          required
+                          class="w-full px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary/50 bg-white"
+                        >
+                          <option value="">请选择产品</option>
+                          <option value="电机外壳加工">电机外壳加工</option>
+                          <option value="控制面板组装">控制面板组装</option>
+                          <option value="电源线焊接">电源线焊接</option>
+                          <option value="包装检测">包装检测</option>
+                          <option value="轴承装配">轴承装配</option>
+                          <option value="电池包组装">电池包组装</option>
+                          <option value="电池包检测">电池包检测</option>
+                          <option value="电池管理系统(BMS)装配">
+                            电池管理系统(BMS)装配
+                          </option>
+                        </select>
+                      </div>
+                      <div>
+                        <label
+                          class="block text-sm font-medium text-gray-700 mb-1"
+                          >所属产线 <span class="text-danger">*</span></label
+                        >
+                        <select
+                          name="productionLine"
+                          required
+                          class="w-full px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary/50 bg-white"
+                        >
+                          <option value="">请选择产线</option>
+                          <option value="机加工线1">机加工线1</option>
+                          <option value="机加工线2">机加工线2</option>
+                          <option value="装配线1">装配线1</option>
+                          <option value="装配线2">装配线2</option>
+                          <option value="焊接线1">焊接线1</option>
+                          <option value="焊接线2">焊接线2</option>
+                          <option value="包装线1">包装线1</option>
+                          <option value="包装线2">包装线2</option>
+                          <option value="电池包组装线1">电池包组装线1</option>
+                          <option value="电池包组装线2">电池包组装线2</option>
+                          <option value="电池检测线1">电池检测线1</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label
+                          class="block text-sm font-medium text-gray-700 mb-1"
+                          >计划产量 <span class="text-danger">*</span></label
+                        >
+                        <input
+                          type="number"
+                          name="planQuantity"
+                          min="1"
+                          required
+                          class="w-full px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary/50"
+                        />
+                      </div>
+                      <div>
+                        <label
+                          class="block text-sm font-medium text-gray-700 mb-1"
+                          >单位 <span class="text-danger">*</span></label
+                        >
+                        <select
+                          name="unit"
+                          required
+                          class="w-full px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary/50 bg-white"
+                        >
+                          <option value="件">件</option>
+                          <option value="套">套</option>
+                          <option value="个">个</option>
+                          <option value="箱">箱</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label
+                          class="block text-sm font-medium text-gray-700 mb-1"
+                          >负责人 <span class="text-danger">*</span></label
+                        >
+                        <select
+                          name="manager"
+                          required
+                          class="w-full px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary/50 bg-white"
+                        >
+                          <option value="">请选择负责人</option>
+                          <option value="张三 (工号: 00123)">
+                            张三 (工号: 00123)
+                          </option>
+                          <option value="李四 (工号: 00124)">
+                            李四 (工号: 00124)
+                          </option>
+                          <option value="王五 (工号: 00125)">
+                            王五 (工号: 00125)
+                          </option>
+                          <option value="赵六 (工号: 00126)">
+                            赵六 (工号: 00126) - 电池包产线负责人
+                          </option>
+                        </select>
+                      </div>
+                      <div>
+                        <label
+                          class="block text-sm font-medium text-gray-700 mb-1"
+                          >优先级</label
+                        >
+                        <select
+                          name="priority"
+                          class="w-full px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary/50 bg-white"
+                        >
+                          <option value="normal">正常</option>
+                          <option value="urgent">加急</option>
+                          <option value="emergency">紧急</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label
+                          class="block text-sm font-medium text-gray-700 mb-1"
+                          >截止时间 <span class="text-danger">*</span></label
+                        >
+                        <input
+                          type="datetime-local"
+                          name="deadline"
+                          required
+                          class="w-full px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary/50"
+                        />
+                      </div>
+                      <div>
+                        <label
+                          class="block text-sm font-medium text-gray-700 mb-1"
+                          >工单备注</label
+                        >
+                        <input
+                          type="text"
+                          name="remark"
+                          class="w-full px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary/50"
+                          placeholder="例如：电池包需符合GB/T 31484-2015标准"
+                        />
+                      </div>
+                    </div>
+                    <div class="pt-4 flex justify-end gap-3">
+                      <button
+                        type="button"
+                        id="cancel-create-btn"
+                        class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
+                      >
+                        取消
+                      </button>
+                      <button
+                        type="submit"
+                        class="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors"
+                      >
+                        创建工单
+                      </button>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <!-- 其他模块 (占位)：示例占位元素，可按需扩展功能 -->
+          <section id="equipment" class="hidden">
+            <div class="bg-white rounded-xl p-6 card-shadow">
+              <h2 class="text-xl font-semibold mb-6">设备管理模块</h2>
+              <p class="text-gray-600">
+                该模块用于管理生产设备信息、监控设备状态、记录设备保养和维修信息，分析设备稼动率。
+              </p>
+            </div>
+          </section>
+
+          <section id="quality" class="hidden">
+            <div class="flex-1 overflow-y-auto p-6">
+              <!-- 工单信息卡片 -->
+              <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+                <div
+                  class="bg-white rounded-lg p-5 card-shadow col-span-1 md:col-span-3"
+                >
+                  <div
+                    class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4"
+                  >
+                    <h3
+                      class="font-semibold text-lg text-neutral-600 flex items-center gap-2"
+                    >
+                      <i class="fa fa-file-text-o text-primary"></i>
+                      工单质检详情
+                    </h3>
+                    <div class="flex gap-3">
+                      <button
+                        type="button"
+                        id="confirmBtn"
+                        class="btn btn-primary"
+                      >
+                        <i class="fa fa-check"></i>
+                        <span>确定</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  <div class="grid grid-cols-2 md:grid-cols-6 gap-4">
+                    <div class="col-span-1 md:col-span-2">
+                      <label class="text-xs text-neutral-400 block mb-1"
+                        >工单编号</label
+                      >
+                      <div class="text-neutral-600 font-medium">LFP250803</div>
+                    </div>
+                    <div class="col-span-1 md:col-span-1">
+                      <label class="text-xs text-neutral-400 block mb-1"
+                        >安全员</label
+                      >
+                      <div class="text-neutral-600 font-medium">张三</div>
+                    </div>
+                    <div class="col-span-1 md:col-span-1">
+                      <label class="text-xs text-neutral-400 block mb-1"
+                        >操作员A</label
+                      >
+                      <div class="text-neutral-600 font-medium">李四</div>
+                    </div>
+                    <div class="col-span-1 md:col-span-1">
+                      <label class="text-xs text-neutral-400 block mb-1"
+                        >操作员B</label
+                      >
+                      <div class="text-neutral-600 font-medium">王五</div>
+                    </div>
+                    <div class="col-span-1 md:col-span-1">
+                      <label class="text-xs text-neutral-400 block mb-1"
+                        >电池状态</label
+                      >
+                      <div class="flex items-center gap-1">
+                        <span class="badge bg-success">正常</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- 核心质检数据 -->
+              <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+                <!-- 电池组电气检测 -->
+                <div
+                  class="bg-white rounded-lg p-5 card-shadow col-span-1 lg:col-span-1"
+                >
+                  <h3
+                    class="font-semibold text-neutral-600 mb-4 flex items-center gap-2"
+                  >
+                    <i class="fa fa-battery text-primary"></i>
+                    电池组电气检测 (6电芯)
+                  </h3>
+
+                  <!-- 电池组压差概览 -->
+                  <div class="mb-6">
+                    <label class="text-sm text-neutral-500 block mb-2"
+                      >电池组整体压差 (mV)</label
+                    >
+                    <div
+                      class="h-2 bg-neutral-100 rounded-full overflow-hidden"
+                    >
+                      <div
+                        id="pack-delta-bar"
+                        class="h-full bg-primary rounded-full"
+                        style="width: 0%"
+                      ></div>
+                    </div>
+                    <div class="flex justify-between text-xs mt-1 items-center">
+                      <span id="pack-delta-min">0</span>
+                      <span class="font-medium"
+                        ><span id="pack-delta-value">0.0</span>
+                        <span class="text-neutral-400 font-normal"
+                          >/ <span id="pack-delta-threshold">15.0</span></span
+                        >
+                      </span>
+                      <span id="pack-delta-max">30</span>
+                    </div>
+                  </div>
+
+                  <!-- 6个电池的详细数据（可由脚本更新） -->
+                  <div class="grid grid-cols-2 gap-3 mb-6" id="cellsContainer">
+                    <!-- 电池1 -->
+                    <div class="cell-item" data-index="0">
+                      <div class="flex justify-between items-center mb-2">
+                        <span class="text-xs text-neutral-400">电池 #1</span>
+                        <span
+                          class="cell-status badge bg-success text-xs"
+                          id="cell-status-0"
+                          >正常</span
+                        >
+                      </div>
+                      <div class="text-lg font-semibold text-neutral-600">
+                        <span class="cell-delta" id="cell-delta-0">0.0</span> mV
+                      </div>
+                      <div class="text-xs text-neutral-400 mt-1">
+                        电压: <span id="cell-voltage-0">3.28</span> V
+                      </div>
+                    </div>
+
+                    <!-- 电池2 -->
+                    <div class="cell-item" data-index="1">
+                      <div class="flex justify-between items-center mb-2">
+                        <span class="text-xs text-neutral-400">电池 #2</span>
+                        <span
+                          class="cell-status badge bg-success text-xs"
+                          id="cell-status-1"
+                          >正常</span
+                        >
+                      </div>
+                      <div class="text-lg font-semibold text-neutral-600">
+                        <span class="cell-delta" id="cell-delta-1">0.0</span> mV
+                      </div>
+                      <div class="text-xs text-neutral-400 mt-1">
+                        电压: <span id="cell-voltage-1">3.27</span> V
+                      </div>
+                    </div>
+
+                    <!-- 电池3 -->
+                    <div class="cell-item" data-index="2">
+                      <div class="flex justify-between items-center mb-2">
+                        <span class="text-xs text-neutral-400">电池 #3</span>
+                        <span
+                          class="cell-status badge bg-success text-xs"
+                          id="cell-status-2"
+                          >正常</span
+                        >
+                      </div>
+                      <div class="text-lg font-semibold text-neutral-600">
+                        <span class="cell-delta" id="cell-delta-2">0.0</span> mV
+                      </div>
+                      <div class="text-xs text-neutral-400 mt-1">
+                        电压: <span id="cell-voltage-2">3.29</span> V
+                      </div>
+                    </div>
+
+                    <!-- 电池4 -->
+                    <div class="cell-item" data-index="3">
+                      <div class="flex justify-between items-center mb-2">
+                        <span class="text-xs text-neutral-400">电池 #4</span>
+                        <span
+                          class="cell-status badge bg-warning text-white text-xs"
+                          id="cell-status-3"
+                          >注意</span
+                        >
+                      </div>
+                      <div class="text-lg font-semibold text-neutral-600">
+                        <span class="cell-delta" id="cell-delta-3">0.0</span> mV
+                      </div>
+                      <div class="text-xs text-neutral-400 mt-1">
+                        电压: <span id="cell-voltage-3">3.25</span> V
+                      </div>
+                    </div>
+
+                    <!-- 电池5 -->
+                    <div class="cell-item" data-index="4">
+                      <div class="flex justify-between items-center mb-2">
+                        <span class="text-xs text-neutral-400">电池 #5</span>
+                        <span
+                          class="cell-status badge bg-success text-xs"
+                          id="cell-status-4"
+                          >正常</span
+                        >
+                      </div>
+                      <div class="text-lg font-semibold text-neutral-600">
+                        <span class="cell-delta" id="cell-delta-4">0.0</span> mV
+                      </div>
+                      <div class="text-xs text-neutral-400 mt-1">
+                        电压: <span id="cell-voltage-4">3.28</span> V
+                      </div>
+                    </div>
+
+                    <!-- 电池6 -->
+                    <div class="cell-item" data-index="5">
+                      <div class="flex justify-between items-center mb-2">
+                        <span class="text-xs text-neutral-400">电池 #6</span>
+                        <span
+                          class="cell-status badge bg-success text-xs"
+                          id="cell-status-5"
+                          >正常</span
+                        >
+                      </div>
+                      <div class="text-lg font-semibold text-neutral-600">
+                        <span class="cell-delta" id="cell-delta-5">0.0</span> mV
+                      </div>
+                      <div class="text-xs text-neutral-400 mt-1">
+                        电压: <span id="cell-voltage-5">3.28</span> V
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- 电池组整体参数 -->
+                  <div class="grid grid-cols-2 gap-4">
+                    <div>
+                      <label class="text-sm text-neutral-500 block mb-2"
+                        >电池组总电压 (V)</label
+                      >
+                      <div class="text-2xl font-semibold text-neutral-600">
+                        <span id="pack-total-voltage">19.68</span> V
+                      </div>
+                      <p class="text-xs text-success">
+                        <i class="fa fa-check-circle"></i> 在标准范围内
+                      </p>
+                    </div>
+
+                    <div>
+                      <label class="text-sm text-neutral-500 block mb-2"
+                        >电池组内阻 (mΩ)</label
+                      >
+                      <div class="text-2xl font-semibold text-neutral-600">
+                        0.85 mΩ
+                      </div>
+                      <p class="text-xs text-success">
+                        <i class="fa fa-check-circle"></i> 在标准范围内
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- 质检结果录入 -->
+                <div
+                  class="bg-white rounded-lg p-5 card-shadow col-span-1 lg:col-span-1 flex flex-col"
+                  style="min-height: 600px"
+                >
+                  <h3
+                    class="font-semibold text-neutral-600 mb-4 flex items-center gap-2"
+                  >
+                    <i class="fa fa-list-check text-primary"></i>
+                    工序质检录入
+                  </h3>
+                  <div class="space-y-4 flex-1 flex flex-col">
+                    <!-- 电池质检 -->
+                    <div class="flex-shrink-0">
+                      <label class="text-sm text-neutral-500 block mb-2"
+                        >电池组质检</label
+                      >
+                      <div class="flex gap-2">
+                        <label class="inline-flex items-center">
+                          <input
+                            type="radio"
+                            name="battery_check"
+                            class="text-primary"
+                            checked
+                          />
+                          <span class="ml-2 text-sm">合格</span>
+                        </label>
+                        <label class="inline-flex items-center">
+                          <input
+                            type="radio"
+                            name="battery_check"
+                            class="text-primary"
+                          />
+                          <span class="ml-2 text-sm">不合格</span>
+                        </label>
+                      </div>
+                    </div>
+
+                    <!-- 塑膜质检 -->
+                    <div class="flex-shrink-0">
+                      <label class="text-sm text-neutral-500 block mb-2"
+                        >塑膜质检</label
+                      >
+                      <div class="flex gap-2">
+                        <label class="inline-flex items-center">
+                          <input
+                            type="radio"
+                            name="film_check"
+                            class="text-primary"
+                          />
+                          <span class="ml-2 text-sm">合格</span>
+                        </label>
+                        <label class="inline-flex items-center">
+                          <input
+                            type="radio"
+                            name="film_check"
+                            class="text-primary"
+                            checked
+                          />
+                          <span class="ml-2 text-sm">不合格</span>
+                        </label>
+                      </div>
+                    </div>
+
+                    <!-- 焊点质检 -->
+                    <div class="flex-shrink-0">
+                      <label class="text-sm text-neutral-500 block mb-2"
+                        >焊点质检</label
+                      >
+                      <div class="flex gap-2">
+                        <label class="inline-flex items-center">
+                          <input
+                            type="radio"
+                            name="solder_check"
+                            class="text-primary"
+                            checked
+                          />
+                          <span class="ml-2 text-sm">合格</span>
+                        </label>
+                        <label class="inline-flex items-center">
+                          <input
+                            type="radio"
+                            name="solder_check"
+                            class="text-primary"
+                          />
+                          <span class="ml-2 text-sm">不合格</span>
+                        </label>
+                      </div>
+                    </div>
+
+                    <!-- 不合格品处理 -->
+                    <div class="flex-shrink-0">
+                      <label class="text-sm text-neutral-500 block mb-2"
+                        >不合格品处理 <span class="text-danger">*</span></label
+                      >
+                      <select
+                        class="w-full border border-neutral-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+                      >
+                        <option value="">请选择处理方式</option>
+                        <option value="rework">返工</option>
+                        <option value="repair">返修</option>
+                        <option value="scrap">报废</option>
+                        <option value="reject">退货</option>
+                      </select>
+                    </div>
+
+                    <!-- 问题描述 -->
+                    <div class="flex flex-col flex-1">
+                      <label class="text-sm text-neutral-500 block mb-2"
+                        >问题描述</label
+                      >
+                      <textarea
+                        class="flex-1 w-full border border-neutral-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary resize-none"
+                        placeholder="请输入过程中产生的问题..."
+                        style="min-height: 200px"
+                      ></textarea>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- 底部操作按钮 - 仅保留保存质检结果 -->
+              <div class="flex justify-end gap-3 mb-6">
+                <button
+                  id="save-quality-btn"
+                  class="btn btn-primary quality-action-btn"
+                >
+                  <i class="fa fa-save"></i>
+                  <span>保存质检结果</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- 签名面板弹窗（质量管理特有） -->
+            <div id="signaturePanel" class="signature-panel hidden">
+              <div class="signature-content">
+                <div class="flex justify-between items-center mb-4">
+                  <h3 class="font-semibold text-lg text-neutral-600">
+                    质检确认签名
+                  </h3>
+                  <button
+                    type="button"
+                    id="closeSignatureBtn"
+                    class="text-neutral-400 hover:text-neutral-600"
+                  >
+                    <i class="fa fa-times"></i>
+                  </button>
+                </div>
+                <div class="signature-body mb-4">
+                  <label class="text-sm text-neutral-500 block mb-2"
+                    >请完成电子签名</label
+                  >
+                  <canvas
+                    id="signatureCanvas"
+                    class="signature-canvas"
+                  ></canvas>
+                </div>
+                <div class="signature-actions">
+                  <button
+                    type="button"
+                    id="clearSignatureBtn"
+                    class="signature-btn signature-btn-outline"
+                  >
+                    <i class="fa fa-eraser"></i>
+                    <span>清空签名</span>
+                  </button>
+                  <button
+                    type="button"
+                    id="submitSignatureBtn"
+                    class="signature-btn signature-btn-primary"
+                  >
+                    <i class="fa fa-check"></i>
+                    <span>确认提交</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section id="traceability" class="hidden">
+            <!-- 顶部表头（卡片外，显示于工单详情上方） -->
+            <!-- 增加与下方卡片相同的水平内边距以保证列对齐 -->
+            <!-- 保留水平间距占位，实际表头已放在下方工单表的 thead 中以保证列宽一致 -->
+            <div
+              id="trace-top-header"
+              class="mt-0 px-4 text-xs text-gray-500 uppercase tracking-wider font-medium"
+            >
+              <!-- 表头位置（与表格共用列宽），视觉表头由表格内的 thead 提供 -->
+            </div>
+
+            <!-- 追溯工单详情（已从 1.html 替换过来：包含工单公共信息与电池明细表） -->
+            <div
+              id="traceability-card"
+              class="bg-white rounded-xl p-6 mt-4 card-shadow"
+            >
+              <div id="detail-header" class="mb-4 border-b pb-3">
+                <div class="flex items-start justify-between">
+                  <div>
+                    <h3 class="text-lg font-semibold">工单详情</h3>
+                    <p class="text-sm text-gray-500" id="orderTitle">
+                      工单编号：LFP250803 | 工单名称：动力电池模组
+                    </p>
+                  </div>
+                  <div class="flex items-center space-x-2">
+                    <!-- 折叠切换按钮 -->
+                    <button
+                      id="toggle-detail-collapse-btn"
+                      class="px-3 py-1 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+                    >
+                      收起详情
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- 工单公共信息（表格） -->
+              <table class="min-w-full text-sm mb-4" id="commonInfo">
+                <tbody>
+                  <tr>
+                    <td class="py-2 font-medium text-gray-700 w-40">
+                      生产时间
+                    </td>
+                    <td class="py-2" id="production-time">2026-02-28 14:45</td>
+                  </tr>
+                  <tr>
+                    <td class="py-2 font-medium text-gray-700">安全员</td>
+                    <td class="py-2">张三（工号：00123）</td>
+                  </tr>
+                  <tr>
+                    <td class="py-2 font-medium text-gray-700">操作人员</td>
+                    <td class="py-2">
+                      李四（工号：00124）、王五（工号：00125）
+                    </td>
+                  </tr>
+                  <tr>
+                    <td class="py-2 font-medium text-gray-700">签收情况</td>
+                    <td class="py-2" id="sign-status">未签收</td>
+                  </tr>
+                  <tr>
+                    <td class="py-2 font-medium text-gray-700">上传图片数量</td>
+                    <td class="py-2" id="upload-photo-count">3张</td>
+                  </tr>
+                  <tr>
+                    <td class="py-2 font-medium text-gray-700">工单相关内容</td>
+                    <td class="py-2">
+                      经检测，动力电池模组外观无损伤，性能测试达标
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+
+              <!-- 固定工单的图片显示区（可通过 JS 在代码中设置多张图片） -->
+              <div id="trace-fixed-photos" class="mt-4">
+                <!-- JS 会在此处渲染图片缩略图 -->
+                <div class="text-sm text-gray-400">暂无图片</div>
+              </div>
+
+              <!-- 电池明细（表格） -->
+              <div id="batteriesContainer">
+                <h4 class="text-sm font-medium text-gray-800 mb-3">电池明细</h4>
+                <div class="overflow-x-auto">
+                  <table
+                    class="min-w-full text-sm table-auto border-collapse border border-gray-200"
+                  >
+                    <thead class="bg-gray-50">
+                      <tr>
+                        <th class="py-2 px-3 text-left font-medium">电池SN</th>
+                        <th class="py-2 px-3 text-left font-medium">
+                          电池类型
+                        </th>
+                        <th class="py-2 px-3 text-left font-medium">
+                          电池电压
+                        </th>
+                        <th class="py-2 px-3 text-left font-medium">
+                          电池内阻
+                        </th>
+                        <th class="py-2 px-3 text-left font-medium">
+                          电池容量
+                        </th>
+                        <th class="py-2 px-3 text-left font-medium">
+                          质检结果
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr class="border-t">
+                        <td class="py-2 px-3">BAT-7894561230</td>
+                        <td class="py-2 px-3">磷酸铁锂电池（LFP）</td>
+                        <td class="py-2 px-3">3.32V（标称）/3.6V（满充）</td>
+                        <td class="py-2 px-3">0.70mΩ</td>
+                        <td class="py-2 px-3">54Ah</td>
+                        <td class="py-2 px-3">合格</td>
+                      </tr>
+                      <tr class="border-t">
+                        <td class="py-2 px-3">BAT-7894561231</td>
+                        <td class="py-2 px-3">磷酸铁锂电池（LFP）</td>
+                        <td class="py-2 px-3">3.31V（标称）/3.6V（满充）</td>
+                        <td class="py-2 px-3">0.72mΩ</td>
+                        <td class="py-2 px-3">54.3Ah</td>
+                        <td class="py-2 px-3">合格</td>
+                      </tr>
+                      <tr class="border-t">
+                        <td class="py-2 px-3">BAT-7894561232</td>
+                        <td class="py-2 px-3">磷酸铁锂电池（LFP）</td>
+                        <td class="py-2 px-3">3.33V（标称）/3.6V（满充）</td>
+                        <td class="py-2 px-3">0.71mΩ</td>
+                        <td class="py-2 px-3">54.2Ah</td>
+                        <td class="py-2 px-3">合格</td>
+                      </tr>
+                      <tr class="border-t">
+                        <td class="py-2 px-3">BAT-7894561233</td>
+                        <td class="py-2 px-3">磷酸铁锂电池（LFP）</td>
+                        <td class="py-2 px-3">3.32V（标称）/3.6V（满充）</td>
+                        <td class="py-2 px-3">0.71mΩ</td>
+                        <td class="py-2 px-3">54.3Ah</td>
+                        <td class="py-2 px-3">合格</td>
+                      </tr>
+                      <tr class="border-t">
+                        <td class="py-2 px-3">BAT-7894561234</td>
+                        <td class="py-2 px-3">磷酸铁锂电池（LFP）</td>
+                        <td class="py-2 px-3">3.34V（标称）/3.6V（满充）</td>
+                        <td class="py-2 px-3">0.72mΩ</td>
+                        <td class="py-2 px-3">54.3Ah</td>
+                        <td class="py-2 px-3">合格</td>
+                      </tr>
+                      <tr class="border-t">
+                        <td class="py-2 px-3">BAT-7894561235</td>
+                        <td class="py-2 px-3">磷酸铁锂电池（LFP）</td>
+                        <td class="py-2 px-3">3.32V（标称）/3.6V（满充）</td>
+                        <td class="py-2 px-3">0.73mΩ</td>
+                        <td class="py-2 px-3">54.4Ah</td>
+                        <td class="py-2 px-3">合格</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              <!-- 按钮组 -->
+              <div class="mt-4 flex gap-3">
+                <button
+                  id="trace-export-btn"
+                  class="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 text-sm"
+                >
+                  导出追溯报告
+                </button>
+                <!-- 历史追溯记录功能已移除 -->
+                <!-- 生成质量工单按钮已移除（生成行为已与“清空所有工单”绑定） -->
+              </div>
+              <!-- 折叠时显示的简洁一行（初始隐藏），现在与质量工单列表共享同一张表格以保证列宽一致 -->
+              <div id="collapsed-detail-row-container" class="hidden mt-4">
+                <div class="overflow-x-auto">
+                  <table class="min-w-full text-sm">
+                    <thead class="bg-transparent">
+                      <tr>
+                        <th
+                          class="py-3 px-4 text-left text-xs text-gray-500 uppercase"
+                        >
+                          工单号
+                        </th>
+                        <th
+                          class="py-3 px-4 text-left text-xs text-gray-500 uppercase"
+                        >
+                          产品名称
+                        </th>
+                        <th
+                          class="py-3 px-4 text-left text-xs text-gray-500 uppercase"
+                        >
+                          所属产线
+                        </th>
+                        <th
+                          class="py-3 px-4 text-left text-xs text-gray-500 uppercase"
+                        >
+                          状态
+                        </th>
+                        <th
+                          class="py-3 px-4 text-left text-xs text-gray-500 uppercase"
+                        >
+                          创建时间
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody id="collapsed-detail-body">
+                      <!-- JS 将渲染一行与质量工单样式一致 -->
+                    </tbody>
+                    <tbody
+                      id="quality-order-list"
+                      class="divide-y divide-gray-200"
+                    >
+                      <!-- 由JS动态渲染质量工单 -->
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section id="user" class="hidden">
+            <div class="bg-white rounded-xl p-6 card-shadow">
+              <h2 class="text-xl font-semibold mb-6">用户管理模块</h2>
+              <p class="text-gray-600">
+                该模块用于管理系统用户账号、分配角色权限、记录用户操作日志。
+              </p>
+            </div>
+          </section>
+
+          <section id="settings" class="hidden">
+            <div class="bg-white rounded-xl p-6 card-shadow">
+              <h2 class="text-xl font-semibold mb-6">系统设置模块</h2>
+              <p class="text-gray-600">
+                该模块用于配置系统基础参数、数据字典、打印模板、预警规则等系统级设置。
+              </p>
+            </div>
+          </section>
+        </div>
+      </main>
+    </div>
+
+    <!-- 重构后的脚本：所有页面行为已移动到 app.js（defer 加载） -->
+    <!-- 本地 localForage：请将 vendor/localforage.min.js 替换为正式库文件 -->
+    <script src="vendor/localforage.min.js" defer></script>
+    <script src="app.js" defer></script>
+    <script src="lock-landscape.js" defer></script>
+  </body>
 </html>
